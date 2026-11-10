@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CurioBid | Seller Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+  <!-- Nav Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-warning" href="index.html">
+        <i class="bi bi-bank me-2"></i>CurioBid <span class="badge bg-secondary font-monospace fs-6 ms-1">Seller Portal</span>
+      </a>
+      <div class="ms-auto d-flex gap-2">
+        <a href="index.html" class="btn btn-outline-light btn-sm"><i class="bi bi-eye me-1"></i>Public View</a>
+        <button onclick="handleLogout()" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container my-5">
+    <!-- Header Title & Action -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="fw-bold m-0">Seller Dashboard</h2>
+        <p class="text-muted m-0">Manage item submissions, continuous video proof, and auction payouts.</p>
+      </div>
+      <button class="btn btn-warning fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#submitItemModal">
+        <i class="bi bi-plus-circle me-1"></i> Submit New Item
+      </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3">
+          <small class="text-muted fw-semibold">Active Auctions</small>
+          <h3 class="fw-bold text-primary m-0" id="stat-active">0</h3>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3">
+          <small class="text-muted fw-semibold">Pending Verification</small>
+          <h3 class="fw-bold text-warning m-0" id="stat-pending">0</h3>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3">
+          <small class="text-muted fw-semibold">Completed Sales</small>
+          <h3 class="fw-bold text-success m-0" id="stat-completed">14</h3>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3">
+          <small class="text-muted fw-semibold">Total Payouts</small>
+          <h3 class="fw-bold text-dark m-0" id="stat-payouts">$4,850</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold m-0"><i class="bi bi-journal-text me-2"></i>Item Submission Status</h5>
+        <span class="badge bg-light text-dark border" id="item-count-badge">0 Items</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Item Title</th>
+              <th>Category</th>
+              <th>Evidence Provided</th>
+              <th>Review Status</th>
+              <th>Current High Bid</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody id="seller-table-body">
+            <!-- Dynamic Rows Rendered Here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit New Item Modal -->
+  <div class="modal fade" id="submitItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-shield-upload me-2 text-warning"></i>Submit Item for Authenticator Review</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="addItemForm">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Item Title</label>
+                <input type="text" class="form-control" id="itemTitle" placeholder="e.g. Byzantine Gold Solidus Coin" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Category</label>
+                <select class="form-select" id="itemCategory" required>
+                  <option value="Ancient Coins">Ancient Coins</option>
+                  <option value="Decorative">Decorative Artifacts</option>
+                  <option value="Relics & Jewelry">Relics & Jewelry</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Starting / Reserve Price ($USD)</label>
+                <input type="number" class="form-control" id="itemPrice" min="10" placeholder="250" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Evidence Video Type</label>
+                <select class="form-select" id="evidenceType" required>
+                  <option value="Obverse/Reverse + Code Video">Obverse/Reverse + Date Code Video</option>
+                  <option value="360° Walkthrough">360° Seamless Rotation Video</option>
+                  <option value="Stamp & Macro Details Video">Stamp & Macro Surface Details Video</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Video Proof Upload / Link</label>
+                <input type="text" class="form-control" id="videoLink" placeholder="https://vimeo.com/demo-proof-video or upload file..." required>
+                <div class="form-text">Must be continuous footage showing physical features and date timestamp.</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Description & Authenticity Details</label>
+                <textarea class="form-control" id="itemDescription" rows="3" placeholder="Provide background history, provenance details, physical flaws, or weight..." required></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning fw-bold px-4">Submit for Review</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Details Modal -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="detailModalTitle">Item Submission Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="detailModalBody">
+          <!-- Populated by JavaScript -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Initial Seller Dataset
+    const defaultSellerItems = [
+      {
+        id: 101,
+        title: "Ancient Greek Silver Tetradrachm",
+        category: "Ancient Coins",
+        evidence: "Obverse/Reverse + Code Video",
+        status: "Pending Review",
+        currentBid: 0,
+        description: "High relief silver coinage featuring Athena obverse and Owl reverse. Continuous video inspection proof uploaded.",
+        videoUrl: "https://vimeo.com/demo-greek-coin"
+      },
+      {
+        id: 102,
+        title: "18th Century Brass Desk Globe",
+        category: "Decorative",
+        evidence: "360° Walkthrough",
+        status: "Approved",
+        currentBid: 820.00,
+        description: "Engraved brass desktop armillary globe. Verified 360 rotation without edits.",
+        videoUrl: "https://vimeo.com/demo-globe-360"
+      }
+    ];
+
+    // Load from localStorage or initialize defaults
+    function getSellerItems() {
+      const stored = localStorage.getItem('curioBidSellerItems');
+      if (!stored) {
+        localStorage.setItem('curioBidSellerItems', JSON.stringify(defaultSellerItems));
+        return defaultSellerItems;
+      }
+      return JSON.parse(stored);
+    }
+
+    function saveSellerItems(items) {
+      localStorage.setItem('curioBidSellerItems', JSON.stringify(items));
+    }
+
+    function renderDashboard() {
+      const items = getSellerItems();
+      const tbody = document.getElementById('seller-table-body');
+      
+      // Calculate Stats
+      const activeCount = items.filter(i => i.status === 'Approved').length;
+      const pendingCount = items.filter(i => i.status === 'Pending Review').length;
+
+      document.getElementById('stat-active').textContent = activeCount;
+      document.getElementById('stat-pending').textContent = pendingCount;
+      document.getElementById('item-count-badge').textContent = `${items.length} Total Submissions`;
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No item submissions found. Click "Submit New Item" to create one.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(item => {
+        let statusBadge = '';
+        if (item.status === 'Pending Review') {
+          statusBadge = `<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Pending Review</span>`;
+        } else if (item.status === 'Approved') {
+          statusBadge = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Approved</span>`;
+        } else {
+          statusBadge = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Rejected</span>`;
+        }
+
+        const bidDisplay = item.currentBid > 0 
+          ? `<strong class="text-success">$${item.currentBid.toFixed(2)}</strong>` 
+          : `<span class="text-muted">--</span>`;
+
+        const actionButton = item.status === 'Approved'
+          ? `<button class="btn btn-sm btn-outline-primary" onclick="viewDetails(${item.id})"><i class="bi bi-graph-up me-1"></i>Track Auction</button>`
+          : `<button class="btn btn-sm btn-outline-secondary" onclick="viewDetails(${item.id})"><i class="bi bi-info-circle me-1"></i>View Details</button>`;
+
+        return `
+          <tr>
+            <td class="fw-semibold">${item.title}</td>
+            <td>${item.category}</td>
+            <td><span class="badge bg-info-subtle text-info-emphasis"><i class="bi bi-film me-1"></i> ${item.evidence}</span></td>
+            <td>${statusBadge}</td>
+            <td>${bidDisplay}</td>
+            <td class="text-end">${actionButton}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Handle New Item Submission
+    document.getElementById('addItemForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const items = getSellerItems();
+
+      const newItem = {
+        id: Date.now(),
+        title: document.getElementById('itemTitle').value.trim(),
+        category: document.getElementById('itemCategory').value,
+        evidence: document.getElementById('evidenceType').value,
+        status: "Pending Review",
+        currentBid: 0,
+        description: document.getElementById('itemDescription').value.trim(),
+        videoUrl: document.getElementById('videoLink').value.trim()
+      };
+
+      items.unshift(newItem);
+      saveSellerItems(items);
+      renderDashboard();
+
+      // Reset form and close modal
+      document.getElementById('addItemForm').reset();
+      const modalEl = document.getElementById('submitItemModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      modal.hide();
+    });
+
+    // View Item Details Function
+    function viewDetails(id) {
+      const items = getSellerItems();
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      document.getElementById('detailModalTitle').textContent = item.title;
+      document.getElementById('detailModalBody').innerHTML = `
+        <div class="mb-3">
+          <span class="badge bg-secondary me-2">${item.category}</span>
+          <span class="badge ${item.status === 'Approved' ? 'bg-success' : 'bg-warning text-dark'}">${item.status}</span>
+        </div>
+        <p><strong>Description:</strong> ${item.description}</p>
+        <p><strong>Evidence Type:</strong> ${item.evidence}</p>
+        <p><strong>Video Proof Link:</strong> <a href="${item.videoUrl}" target="_blank" class="text-break">${item.videoUrl}</a></p>
+        <hr>
+        <div class="d-flex justify-content-between">
+          <span>Current High Bid:</span>
+          <strong class="text-success">$${item.currentBid > 0 ? item.currentBid.toFixed(2) : 'No bids yet'}</strong>
+        </div>
+      `;
+
+      const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+      modal.show();
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('curioBidUser');
+      window.location.href = 'login.html';
+    }
+
+    // Initialize Page
+    renderDashboard();
+  </script>
+</body>
+</html>
