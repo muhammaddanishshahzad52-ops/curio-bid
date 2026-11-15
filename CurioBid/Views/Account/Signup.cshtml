@@ -1,0 +1,154 @@
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Register";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+
+            <div class="mb-3 text-center">
+                <a asp-controller="Home" asp-action="Index" class="text-light text-decoration-none small">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Public Auctions
+                </a>
+            </div>
+
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <h3 class="fw-bold text-dark"><i class="bi bi-bank text-warning me-2"></i>Create Account</h3>
+                        <p class="text-muted small">Join CurioBid to buy or sell verified antique collectibles</p>
+                    </div>
+
+                    <div id="alertBox" class="alert alert-danger d-none p-2 small text-center" role="alert"></div>
+
+                    <form id="signupForm" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fullName" class="form-label fw-semibold small">Full Name</label>
+                                <input type="text" class="form-control" id="fullName" placeholder="John Doe" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label fw-semibold small">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" placeholder="+1 234 567 890" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold small">Email Address</label>
+                            <input type="email" class="form-control" id="email" placeholder="name@@domain.com" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="roleSelect" class="form-label fw-semibold small">Primary Account Role</label>
+                            <select class="form-select" id="roleSelect" required>
+                                <option value="buyer">Buyer / Bidder</option>
+                                <option value="seller">Seller (Requires verification submission)</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label fw-semibold small">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" placeholder="••••••••" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="bi bi-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirmPassword" class="form-label fw-semibold small">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirmPassword" placeholder="••••••••" required>
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input type="checkbox" class="form-check-input" id="termsCheck" required>
+                            <label class="form-check-label small text-muted" for="termsCheck">
+                                I agree to the
+                                <a href="#" class="text-warning text-decoration-none fw-semibold">Refundable Bid Commitment Policy</a>
+                                and Auction Terms.
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm">
+                            <i class="bi bi-person-plus me-1"></i> Create Account
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card-footer text-center bg-light py-3 border-0 rounded-bottom-4">
+                    <small class="text-muted">
+                        Already registered?
+                        <a asp-controller="Account" asp-action="Login" class="fw-bold text-decoration-none text-warning">Sign In</a>
+                    </small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            toggleIcon.classList.toggle('bi-eye');
+            toggleIcon.classList.toggle('bi-eye-slash');
+        });
+
+        const signupForm = document.getElementById('signupForm');
+        const alertBox = document.getElementById('alertBox');
+
+        signupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('fullName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const role = document.getElementById('roleSelect').value;
+            const password = passwordInput.value.trim();
+            const confirmPassword = document.getElementById('confirmPassword').value.trim();
+            const termsCheck = document.getElementById('termsCheck').checked;
+
+            if (!fullName || !phone || !email || !password || !confirmPassword) {
+                showError('Please fill out all required fields.');
+                return;
+            }
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long.');
+                return;
+            }
+            if (password !== confirmPassword) {
+                showError('Passwords do not match.');
+                return;
+            }
+            if (!termsCheck) {
+                showError('You must agree to the Refundable Bid Commitment Policy.');
+                return;
+            }
+
+            localStorage.setItem('curioBidUser', JSON.stringify({
+                fullName, phone, email, role,
+                createdAt: new Date().toISOString()
+            }));
+
+            if (role === 'seller') {
+                window.location.href = '@Url.Action("Index", "Seller")';
+            } else {
+                window.location.href = '@Url.Action("Index", "Home")';
+            }
+        });
+
+        function showError(message) {
+            alertBox.textContent = message;
+            alertBox.classList.remove('d-none');
+        }
+    </script>
+}

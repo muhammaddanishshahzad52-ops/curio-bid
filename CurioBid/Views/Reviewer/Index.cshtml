@@ -1,0 +1,329 @@
+﻿@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Reviewer Queue";
+    ViewData["RoleLabel"] = "Listing Reviewer";
+    ViewData["NavBg"] = "bg-dark";
+    ViewData["BrandClass"] = "text-warning";
+    ViewData["BadgeClass"] = "bg-info";
+}
+
+<div class="container my-5">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold m-0">Verification Queue</h2>
+            <p class="text-muted m-0">Inspect media uploads &amp; video challenge codes before opening 24-hour auctions.</p>
+        </div>
+        <span class="badge bg-danger fs-6 px-3 py-2 shadow-sm" id="queue-badge-count">0 Submissions Awaiting Audit</span>
+    </div>
+
+    <div class="row g-4">
+        <!-- Queue Selector Sidebar -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold m-0"><i class="bi bi-list-task me-2"></i>Audit Queue</h6>
+                    <span class="badge bg-secondary" id="queue-list-count">0</span>
+                </div>
+                <div class="list-group list-group-flush" id="queue-list-container">
+                    <!-- Queue list rendered by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Metrics Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold m-0"><i class="bi bi-graph-up me-2"></i>Reviewer Performance Metrics</h6>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        Items Approved Today
+                        <span class="badge bg-success rounded-pill fs-6" id="metric-approved">12</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        Rejections / Fraud Flagged
+                        <span class="badge bg-danger rounded-pill fs-6" id="metric-rejected">2</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        Avg. Review Time
+                        <strong class="text-muted">14 mins</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Active Inspection Panel -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" id="inspection-card">
+                <!-- Inspection content rendered by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Note / Prompt Modal -->
+<div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="actionModalTitle">Action Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label fw-semibold" id="actionModalLabel">Provide reviewer feedback for the seller:</label>
+                <textarea class="form-control" id="actionNoteInput" rows="3" placeholder="Enter comments..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary fw-bold" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initial seed data for the review queue if nothing is stored yet
+        const defaultPendingItems = [
+            {
+                id: 9082,
+                title: "Ancient Greek Silver Tetradrachm",
+                category: "Ancient Coins",
+                seller: "Seller #104 (John's Antiquities)",
+                evidence: "Obverse/Reverse + Code Video",
+                code: "#9821",
+                status: "Pending Review",
+                description: "Verified obverse/reverse details with video proof showing continuous coin rotation.",
+                videoUrl: "https://vimeo.com/demo-greek-coin",
+                image: "https://images.unsplash.com/photo-1610375461246-83df859d849d?w=500",
+                reservePrice: 450
+            },
+            {
+                id: 9083,
+                title: "Byzantine Bronze Reliquary Cross",
+                category: "Relics & Jewelry",
+                seller: "Seller #112 (Heritage Artifacts)",
+                evidence: "360° Walkthrough",
+                code: "#7741",
+                status: "Pending Review",
+                description: "Engraved bronze reliquary cross fragment with continuous lighting inspection.",
+                videoUrl: "https://vimeo.com/demo-byzantine-cross",
+                image: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=500",
+                reservePrice: 320
+            }
+        ];
+
+        let metrics = {
+            approved: 12,
+            rejected: 2
+        };
+
+        let selectedItemId = null;
+        let currentActionType = null;
+
+        function getStoredSellerItems() {
+            const stored = localStorage.getItem('curioBidSellerItems');
+            if (!stored) {
+                localStorage.setItem('curioBidSellerItems', JSON.stringify(defaultPendingItems));
+                return defaultPendingItems;
+            }
+            return JSON.parse(stored);
+        }
+
+        function saveSellerItems(items) {
+            localStorage.setItem('curioBidSellerItems', JSON.stringify(items));
+        }
+
+        function renderReviewQueue() {
+            const items = getStoredSellerItems();
+            const pendingItems = items.filter(i => i.status === 'Pending Review');
+
+            // Update counters
+            document.getElementById('queue-badge-count').textContent = `${pendingItems.length} Submissions Awaiting Audit`;
+            document.getElementById('queue-list-count').textContent = pendingItems.length;
+            document.getElementById('metric-approved').textContent = metrics.approved;
+            document.getElementById('metric-rejected').textContent = metrics.rejected;
+
+            const listContainer = document.getElementById('queue-list-container');
+            const inspectionCard = document.getElementById('inspection-card');
+
+            if (pendingItems.length === 0) {
+                listContainer.innerHTML = `<div class="p-4 text-center text-muted">No items pending review.</div>`;
+                inspectionCard.innerHTML = `
+                            <div class="card-body text-center py-5">
+                                <i class="bi bi-shield-check text-success display-1 mb-3"></i>
+                                <h4 class="fw-bold">Audit Queue Cleared!</h4>
+                                <p class="text-muted">All item submissions have been verified and processed.</p>
+                            </div>
+                        `;
+                return;
+            }
+
+            // If nothing is selected, or the selected item is no longer pending, select the first
+            if (!selectedItemId || !pendingItems.some(i => i.id === selectedItemId)) {
+                selectedItemId = pendingItems[0].id;
+            }
+
+            // Render queue list
+            listContainer.innerHTML = pendingItems.map(item => `
+                        <button type="button"
+                                class="list-group-item list-group-item-action ${item.id === selectedItemId ? 'active fw-bold' : ''}"
+                                onclick="selectQueueItem(${item.id})">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <h6 class="mb-1 text-truncate" style="max-width: 180px;">${item.title}</h6>
+                                <small class="${item.id === selectedItemId ? 'text-light' : 'text-muted'}">#CB-${item.id}</small>
+                            </div>
+                            <small class="${item.id === selectedItemId ? 'text-light-50' : 'text-muted'} d-block">${item.category}</small>
+                        </button>
+                    `).join('');
+
+            // Render the active inspection item
+            const activeItem = pendingItems.find(i => i.id === selectedItemId);
+            if (!activeItem) return;
+
+            const challengeCode = activeItem.code || '#9821';
+            const sellerInfo = activeItem.seller || 'Seller #104 (Verified Member)';
+
+            inspectionCard.innerHTML = `
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold m-0"><i class="bi bi-search me-2"></i>Active Review Item #CB-${activeItem.id}</h5>
+                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Pending Decision</span>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h4 class="fw-bold mb-1">${activeItem.title}</h4>
+                                    <p class="text-muted small mb-0"><i class="bi bi-person me-1"></i> Submitted by: ${sellerInfo}</p>
+                                </div>
+                                <span class="badge bg-secondary fs-6">${activeItem.category}</span>
+                            </div>
+
+                            <p class="text-dark bg-light p-3 rounded border my-3">${activeItem.description || 'No detailed description provided.'}</p>
+
+                            <hr>
+
+                            <h6 class="fw-bold mb-3"><i class="bi bi-camera me-1"></i> Photo & Video Evidence Challenge</h6>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="bg-secondary text-white p-4 text-center rounded d-flex flex-column align-items-center justify-content-center" style="min-height: 160px;">
+                                        <i class="bi bi-image fs-1 mb-2"></i>
+                                        <span class="fw-semibold">Obverse / Reverse Macro Photos</span>
+                                        <small class="text-light opacity-75 mt-1">High resolution capture verified</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-dark text-white p-4 text-center rounded d-flex flex-column align-items-center justify-content-center" style="min-height: 160px;">
+                                        <i class="bi bi-play-circle fs-1 mb-2 text-warning"></i>
+                                        <span class="fw-semibold">Continuous Video Code: <span class="text-warning">${challengeCode}</span></span>
+                                        <a href="${activeItem.videoUrl || '#'}" target="_blank" class="btn btn-outline-warning btn-sm mt-2">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i> Play Video Stream
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info py-2 d-flex align-items-center">
+                                <i class="bi bi-info-circle fs-5 me-2"></i>
+                                <small>Verify that physical item details match close-up photos and code badge before opening 24-hour timed bidding.</small>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4 flex-wrap">
+                                <button class="btn btn-success fw-bold flex-grow-1 py-2" onclick="processDecision('approve', ${activeItem.id})">
+                                    <i class="bi bi-check-lg me-1"></i> Approve Listing
+                                </button>
+                                <button class="btn btn-warning fw-bold flex-grow-1 py-2" onclick="openActionModal('request_proof', ${activeItem.id})">
+                                    <i class="bi bi-question-circle me-1"></i> Request More Proof
+                                </button>
+                                <button class="btn btn-danger fw-bold flex-grow-1 py-2" onclick="openActionModal('reject', ${activeItem.id})">
+                                    <i class="bi bi-x-lg me-1"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+                    `;
+        }
+
+        function selectQueueItem(id) {
+            selectedItemId = id;
+            renderReviewQueue();
+        }
+
+        function processDecision(action, itemId, note = '') {
+            const items = getStoredSellerItems();
+            const itemIndex = items.findIndex(i => i.id === itemId);
+            if (itemIndex === -1) return;
+
+            if (action === 'approve') {
+                items[itemIndex].status = 'Approved';
+                metrics.approved++;
+
+                // Publish to the public live auctions store
+                const publicAuctions = JSON.parse(localStorage.getItem('curioBidPublicAuctions') || '[]');
+                const newAuction = {
+                    id: items[itemIndex].id,
+                    title: items[itemIndex].title,
+                    category: items[itemIndex].category,
+                    description: items[itemIndex].description || 'Video verified antique collectible.',
+                    currentBid: items[itemIndex].reservePrice || items[itemIndex].currentBid || 200,
+                    endTime: new Date().getTime() + (24 * 3600 * 1000), // 24-hour timer
+                    image: items[itemIndex].image || 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=500'
+                };
+                publicAuctions.unshift(newAuction);
+                localStorage.setItem('curioBidPublicAuctions', JSON.stringify(publicAuctions));
+
+                alert(`Item "#CB-${itemId}" approved and published to live 24-hour auctions!`);
+            } else if (action === 'reject') {
+                items[itemIndex].status = 'Rejected';
+                items[itemIndex].reviewerNote = note || 'Does not satisfy authenticity criteria.';
+                metrics.rejected++;
+                alert(`Item "#CB-${itemId}" rejected.`);
+            } else if (action === 'request_proof') {
+                items[itemIndex].status = 'Needs Proof';
+                items[itemIndex].reviewerNote = note || 'Please upload clearer video footage.';
+                alert(`Proof request sent to seller for item "#CB-${itemId}".`);
+            }
+
+            saveSellerItems(items);
+            renderReviewQueue();
+        }
+
+        function openActionModal(type, itemId) {
+            selectedItemId = itemId;
+            currentActionType = type;
+
+            const modalTitle = document.getElementById('actionModalTitle');
+            const modalBtn = document.getElementById('confirmActionBtn');
+            const input = document.getElementById('actionNoteInput');
+            input.value = '';
+
+            if (type === 'reject') {
+                modalTitle.textContent = 'Reject Listing';
+                modalBtn.className = 'btn btn-danger fw-bold';
+                modalBtn.textContent = 'Confirm Rejection';
+            } else {
+                modalTitle.textContent = 'Request More Proof';
+                modalBtn.className = 'btn btn-warning fw-bold';
+                modalBtn.textContent = 'Send Proof Request';
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('actionModal'));
+            modal.show();
+        }
+
+        document.getElementById('confirmActionBtn').addEventListener('click', () => {
+            const note = document.getElementById('actionNoteInput').value.trim();
+            const modalEl = document.getElementById('actionModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+
+            processDecision(currentActionType, selectedItemId, note);
+            modal.hide();
+        });
+
+        function handleLogout() {
+            localStorage.removeItem('curioBidUser');
+            window.location.href = '@Url.Action("Login", "Account")';
+        }
+
+        // Initialize review queue
+        renderReviewQueue();
+    </script>
+}
