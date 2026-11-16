@@ -345,11 +345,6 @@
             renderAdminDashboard();
         }
 
-        function handleLogout() {
-            localStorage.removeItem('curioBidUser');
-            window.location.href = '@Url.Action("Login", "Account")';
-        }
-
         // Initialize page
         renderAdminDashboard();
     </script>

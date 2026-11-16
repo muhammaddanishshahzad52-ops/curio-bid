@@ -318,11 +318,6 @@
             modal.hide();
         });
 
-        function handleLogout() {
-            localStorage.removeItem('curioBidUser');
-            window.location.href = '@Url.Action("Login", "Account")';
-        }
-
         // Initialize review queue
         renderReviewQueue();
     </script>

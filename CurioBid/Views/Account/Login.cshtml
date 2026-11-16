@@ -1,3 +1,4 @@
+@model LoginViewModel
 @{
     Layout = "_AuthLayout";
     ViewData["Title"] = "Log In";
@@ -23,53 +24,39 @@
                         <p class="text-muted small">Sign in to manage listings or place bids</p>
                     </div>
 
-                    <div id="alertBox" class="alert alert-danger d-none p-2 small text-center" role="alert"></div>
+                    <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
 
-                    <form id="loginForm" novalidate>
                         <div class="mb-3">
-                            <label for="emailInput" class="form-label fw-semibold small">Email Address</label>
+                            <label asp-for="Email" class="form-label fw-semibold small"></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
-                                <input type="email" class="form-control" id="emailInput" placeholder="name@@example.com" required>
+                                <input asp-for="Email" class="form-control" placeholder="name@@example.com" />
                             </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label for="passwordInput" class="form-label fw-semibold small">Password</label>
+                            <label asp-for="Password" class="form-label fw-semibold small"></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
-                                <input type="password" class="form-control" id="passwordInput" placeholder="••••••••" required>
+                                <input asp-for="Password" class="form-control" placeholder="••••••••" />
                                 <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                                     <i class="bi bi-eye" id="toggleIcon"></i>
                                 </button>
                             </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="remember">
-                                <label class="form-check-label small text-muted" for="remember">Remember me</label>
-                            </div>
-                            <a href="#" onclick="alert('Password reset link sent to demo account!'); return false;"
-                               class="small text-decoration-none text-warning fw-semibold">Forgot password?</a>
+                        <div class="form-check mb-4">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label small text-muted"></label>
                         </div>
 
-                        <button type="submit" class="btn btn-warning w-100 fw-bold py-2 mb-3 shadow-sm">
+                        <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
                         </button>
                     </form>
-
-                    <hr class="my-4">
-
-                    <div class="text-center">
-                        <p class="small text-muted mb-2 fw-semibold">Quick Demo Login As:</p>
-                        <div class="btn-group btn-group-sm w-100" role="group">
-                            <button type="button" class="btn btn-outline-dark" onclick="loginAsRole('buyer')">Buyer</button>
-                            <button type="button" class="btn btn-outline-dark" onclick="loginAsRole('seller')">Seller</button>
-                            <button type="button" class="btn btn-outline-dark" onclick="loginAsRole('reviewer')">Reviewer</button>
-                            <button type="button" class="btn btn-outline-dark" onclick="loginAsRole('admin')">Admin</button>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="card-footer text-center bg-light py-3 border-0 rounded-bottom-4">
@@ -86,59 +73,14 @@
 
 @section Scripts {
     <script>
-        const roleRoutes = {
-            buyer: '@Url.Action("Index", "Home")',
-            seller: '@Url.Action("Index", "Seller")',
-            reviewer: '@Url.Action("Index", "Reviewer")',
-            admin: '@Url.Action("Index", "Admin")'
-        };
-
-        const togglePassword = document.getElementById('togglePassword');
-        const passwordInput = document.getElementById('passwordInput');
+        const passwordInput = document.getElementById('Password');
         const toggleIcon = document.getElementById('toggleIcon');
 
-        togglePassword.addEventListener('click', () => {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            toggleIcon.classList.toggle('bi-eye');
-            toggleIcon.classList.toggle('bi-eye-slash');
+        document.getElementById('togglePassword').addEventListener('click', () => {
+            const show = passwordInput.type === 'password';
+            passwordInput.type = show ? 'text' : 'password';
+            toggleIcon.classList.toggle('bi-eye', !show);
+            toggleIcon.classList.toggle('bi-eye-slash', show);
         });
-
-        const loginForm = document.getElementById('loginForm');
-        const alertBox = document.getElementById('alertBox');
-
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('emailInput').value.trim();
-            const password = passwordInput.value.trim();
-
-            if (!email || !password) {
-                alertBox.textContent = 'Please enter both email and password.';
-                alertBox.classList.remove('d-none');
-                return;
-            }
-
-            let role = 'buyer';
-            if (email.includes('seller')) role = 'seller';
-            else if (email.includes('reviewer')) role = 'reviewer';
-            else if (email.includes('admin')) role = 'admin';
-
-            localStorage.setItem('curioBidUser', JSON.stringify({
-                email: email,
-                role: role,
-                loggedInAt: new Date().toISOString()
-            }));
-
-            window.location.href = roleRoutes[role];
-        });
-
-        function loginAsRole(role) {
-            localStorage.setItem('curioBidUser', JSON.stringify({
-                email: `${role}@@curiobid.com`,
-                role: role,
-                loggedInAt: new Date().toISOString()
-            }));
-            window.location.href = roleRoutes[role];
-        }
     </script>
 }
