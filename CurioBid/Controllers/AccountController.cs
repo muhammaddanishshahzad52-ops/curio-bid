@@ -32,13 +32,6 @@ namespace CurioBid.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Signup(RegisterViewModel model)
         {
-            // Public signup may only create Buyers or Sellers.
-            // Never trust the browser: someone could post Role=Admin by hand.
-            if (model.Role != "Buyer" && model.Role != "Seller")
-            {
-                ModelState.AddModelError(nameof(model.Role), "Invalid account role.");
-            }
-
             if (!model.AcceptTerms)
             {
                 ModelState.AddModelError(nameof(model.AcceptTerms),
@@ -69,12 +62,12 @@ namespace CurioBid.Controllers
                 return View(model);
             }
 
-            await _userManager.AddToRoleAsync(user, model.Role);
+            await _userManager.AddToRoleAsync(user, "User");
 
             // Sign in AFTER the role is added, so the cookie contains the role
             await _signInManager.SignInAsync(user, isPersistent: false);
 
-            return RedirectByRole(new List<string> { model.Role });
+            return RedirectToAction("Index", "Home");
         }
 
         // ---------- LOGIN ----------

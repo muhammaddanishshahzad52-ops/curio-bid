@@ -14,9 +14,9 @@
             <h2 class="fw-bold m-0">System Administration</h2>
             <p class="text-muted m-0">Platform operational workflows, deposit escrow management, and audit logs.</p>
         </div>
-        <button class="btn btn-orange fw-bold shadow-sm" onclick="addNewUserPrompt()">
-            <i class="bi bi-person-plus me-1"></i> Add System User
-        </button>
+        <a asp-controller="Users" asp-action="Index" class="btn btn-orange fw-bold shadow-sm">
+            <i class="bi bi-people me-1"></i> Manage Users
+        </a>
     </div>
 
     <!-- System Metrics -->

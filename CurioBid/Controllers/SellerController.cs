@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CurioBid.Controllers
 {
+    [Authorize(Roles = "User")]
     public class SellerController : Controller
     {
-        [Authorize(Roles = "Seller")]
         public IActionResult Index()
         {
             return View();

@@ -19,10 +19,6 @@ namespace CurioBid.Models
         [Display(Name = "Email Address")]
         public string Email { get; set; } = string.Empty;
 
-        [Required]
-        [Display(Name = "Primary Account Role")]
-        public string Role { get; set; } = "Buyer";
-
         [Required(ErrorMessage = "Password is required.")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters.")]
         [DataType(DataType.Password)]

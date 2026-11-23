@@ -1,0 +1,97 @@
+﻿@model IEnumerable<UserListItemViewModel>
+@{
+    ViewData["Title"] = "Manage Users";
+    var search = ViewData["Search"] as string;
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <a asp-controller="Admin" asp-action="Index" class="small text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i>Admin Panel
+            </a>
+            <h2 class="fw-bold m-0">Manage Users</h2>
+            <p class="text-muted m-0">Create, view, edit and remove platform accounts.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-warning fw-bold shadow-sm">
+            <i class="bi bi-person-plus me-1"></i> Add User
+        </a>
+    </div>
+
+    <partial name="_Alerts" />
+
+    <form id="searchForm" asp-action="Index" method="get" class="d-flex gap-2 mb-3">
+        <input id="searchInput" name="search" value="@search" class="form-control" placeholder="Search by name or email" autocomplete="off" />
+        <button type="submit" class="btn btn-dark">Search</button>
+
+        <a asp-action="Index" id="clearBtn" class="btn btn-outline-secondary @(string.IsNullOrWhiteSpace(search) ? "d-none" : "")">Clear</a>
+    </form>
+
+    <div class="card border-0 shadow-sm" id="userTableContainer">
+        <!-- Render the partial view here -->
+        <partial name="_UserListPartial" model="Model" />
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("searchInput");
+            const searchForm = document.getElementById("searchForm");
+            const tableContainer = document.getElementById("userTableContainer");
+            const clearBtn = document.getElementById("clearBtn");
+            let timeout = null;
+
+            function fetchResults(query) {
+                const url = `@Url.Action("Index", "Users")?search=${encodeURIComponent(query)}`;
+
+                // We add the XMLHttpRequest header so the Controller knows to only send the partial table back
+                fetch(url, {
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    // Inject the updated table HTML
+                    tableContainer.innerHTML = html;
+
+                    // Show or hide the clear button dynamically
+                    if (query.trim() !== "") {
+                        clearBtn.classList.remove("d-none");
+                    } else {
+                        clearBtn.classList.add("d-none");
+                    }
+
+                    // Optional: Update the browser URL quietly so if they refresh, the search stays
+                    window.history.replaceState(null, "", url);
+                })
+                .catch(err => console.error("Search error:", err));
+            }
+
+            // 1. Live search as the admin types
+            searchInput.addEventListener("input", function () {
+                clearTimeout(timeout);
+                const query = this.value;
+
+                // Wait 300ms after they stop typing before hitting the database
+                timeout = setTimeout(() => {
+                    fetchResults(query);
+                }, 300);
+            });
+
+            // 2. Prevent the form from doing a full page reload if they hit "Enter"
+            searchForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+                fetchResults(searchInput.value);
+            });
+
+            // 3. Make the clear button work via AJAX too
+            clearBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                searchInput.value = "";
+                fetchResults("");
+            });
+        });
+    </script>
+}

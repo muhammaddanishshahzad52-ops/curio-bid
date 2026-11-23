@@ -1,0 +1,52 @@
+﻿@model UserListItemViewModel
+@{
+    ViewData["Title"] = "User Details";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold m-0"><i class="bi bi-person-badge me-2"></i>User Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">@Model.FullName</dd>
+
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8">@Model.Email</dd>
+
+                        <dt class="col-sm-4">Phone</dt>
+                        <dd class="col-sm-8">@Model.PhoneNumber</dd>
+
+                        <dt class="col-sm-4">Role</dt>
+                        <dd class="col-sm-8"><span class="badge bg-secondary">@Model.Role</span></dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IsSuspended)
+                            {
+                                <span class="badge bg-danger">Suspended</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Joined</dt>
+                        <dd class="col-sm-8">
+                            @(Model.CreatedAt.Year > 1 ? Model.CreatedAt.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—")
+                        </dd>
+                    </dl>
+                </div>
+                <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+                    <a asp-action="Index" class="btn btn-secondary">Back to list</a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning fw-bold">Edit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

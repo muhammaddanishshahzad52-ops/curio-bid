@@ -5,7 +5,8 @@ namespace CurioBid.Data
 {
     public class DBSeeder
     {
-        public static readonly string[] Roles = { "Buyer", "Seller", "Reviewer", "Admin" };
+        public static readonly string[] Roles = { "User", "Reviewer", "Admin" };
+        private static readonly string[] LegacyRoles = { "Buyer", "Seller" };
 
         public static async Task SeedAsync(IServiceProvider services)
         {
@@ -19,8 +20,27 @@ namespace CurioBid.Data
                     await roleManager.CreateAsync(new IdentityRole(role));
                 }
             }
+
+            foreach (var legacy in LegacyRoles)
+            {
+                if (!await roleManager.RoleExistsAsync(legacy)) continue;
+
+                var users = await userManager.GetUsersInRoleAsync(legacy);
+                foreach (var u in users)
+                {
+                    if (!await userManager.IsInRoleAsync(u, "User"))
+                    {
+                        await userManager.AddToRoleAsync(u, "User");
+                    }
+                    await userManager.RemoveFromRoleAsync(u, legacy);
+                }
+
+                var oldRole = await roleManager.FindByNameAsync(legacy);
+                if (oldRole != null) await roleManager.DeleteAsync(oldRole);
+            }
             await CreateUserAsync(userManager, config, "SeedUsers:Admin", "Admin");
             await CreateUserAsync(userManager, config, "SeedUsers:Reviewer", "Reviewer");
+
         }
     private static async Task CreateUserAsync(
             UserManager<ApplicationUser> userManager,

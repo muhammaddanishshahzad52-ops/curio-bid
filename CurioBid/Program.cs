@@ -31,6 +31,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+// Re-check the security stamp every 10 seconds (default is 30 minutes) so that
+// role changes and suspensions take effect almost immediately
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+    options.ValidationInterval = TimeSpan.FromSeconds(10));
 
 var app = builder.Build();
 
