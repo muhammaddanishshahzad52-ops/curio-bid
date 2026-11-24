@@ -1,4 +1,5 @@
 using CurioBid.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,6 +27,13 @@ namespace CurioBid.Controllers
                 return RedirectToAction("Index", "Home");
 
             return View(new RegisterViewModel());
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
 
         [HttpPost]
@@ -136,13 +144,6 @@ namespace CurioBid.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // ---------- ACCESS DENIED ----------
-
-        [HttpGet]
-        public IActionResult AccessDenied()
-        {
-            return View();
-        }
 
         // ---------- helper ----------
 

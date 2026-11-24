@@ -1,0 +1,11 @@
+﻿@model ListingStatus
+@{
+    var (css, icon, text) = Model switch
+    {
+        ListingStatus.Pending => ("bg-warning text-dark", "bi-hourglass-split", "Pending Review"),
+        ListingStatus.NeedsProof => ("bg-info text-dark", "bi-question-circle", "More Proof Needed"),
+        ListingStatus.Approved => ("bg-success", "bi-check-circle", "Approved"),
+        _ => ("bg-danger", "bi-x-circle", "Rejected")
+    };
+}
+<span class="badge @css"><i class="bi @icon me-1"></i>@text</span>

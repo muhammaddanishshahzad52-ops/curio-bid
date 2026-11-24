@@ -1,4 +1,5 @@
-﻿using CurioBid.Models;
+﻿using CurioBid.Data;
+using CurioBid.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,12 @@ namespace CurioBid.Controllers
     {
         private static readonly string[] AllowedRoles = { "User", "Reviewer", "Admin" };
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ApplicationDbContext _db;
 
-        public UsersController(UserManager<ApplicationUser> userManager)
+        public UsersController(UserManager<ApplicationUser> userManager, ApplicationDbContext db)
         {
             _userManager = userManager;
+            _db = db;
         }
         [HttpGet]
         [HttpGet]
@@ -104,27 +107,26 @@ namespace CurioBid.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Edit(string? id)
-        {
-            if (string.IsNullOrEmpty(id)) return NotFound();
+        //[HttpGet]
+        //public async Task<IActionResult> Edit(string? id)
+        //{
+        //    if (string.IsNullOrEmpty(id)) return NotFound();
 
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
+        //    var user = await _userManager.FindByIdAsync(id);
+        //    if (user == null) return NotFound();
 
-            var roles = await _userManager.GetRolesAsync(user);
+        //    var roles = await _userManager.GetRolesAsync(user);
 
-            return View(new EditUserViewModel
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                Email = user.Email ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                Role = roles.FirstOrDefault() ?? "User",
-                IsSuspended = await _userManager.IsLockedOutAsync(user)
-            });
-        }
-
+        //    return View(new EditUserViewModel
+        //    {
+        //        Id = user.Id,
+        //        FullName = user.FullName,
+        //        Email = user.Email ?? string.Empty,
+        //        PhoneNumber = user.PhoneNumber ?? string.Empty,
+        //        Role = roles.FirstOrDefault() ?? "User",
+        //        IsSuspended = await _userManager.IsLockedOutAsync(user)
+        //    });
+        //}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EditUserViewModel model)
@@ -144,8 +146,7 @@ namespace CurioBid.Controllers
 
             var currentRoles = await _userManager.GetRolesAsync(user);
 
-            // An admin must not lock themselves out of the system.
-            // Only admins reach this page, so this also guarantees at least one admin always remains.
+            // 1. Prevent admin self-lockout / self-demotion
             if (user.Id == _userManager.GetUserId(User) &&
                 (model.IsSuspended || model.Role != "Admin"))
             {
@@ -154,7 +155,16 @@ namespace CurioBid.Controllers
                 return View(model);
             }
 
-            // 1. Profile fields (the email is also the username)
+            // 2. Prevent demoting/suspending a reviewer with pending listings
+            if (currentRoles.Contains("Reviewer") && (model.Role != "Reviewer" || model.IsSuspended) &&
+                await _db.Listings.AnyAsync(l => l.ReviewerId == user.Id && l.Status == ListingStatus.Pending))
+            {
+                ModelState.AddModelError(string.Empty,
+                    "This reviewer still has listings waiting for review. Wait until their queue is empty first.");
+                return View(model);
+            }
+
+            // 3. Update profile fields
             user.FullName = model.FullName;
             user.Email = model.Email;
             user.UserName = model.Email;
@@ -170,14 +180,14 @@ namespace CurioBid.Controllers
                 return View(model);
             }
 
-            // 2. Role: each account has exactly one role
+            // 4. Enforce single role
             if (currentRoles.Count != 1 || currentRoles[0] != model.Role)
             {
                 await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 await _userManager.AddToRoleAsync(user, model.Role);
             }
 
-            // 3. Suspension = locked out until the end of time
+            // 5. Suspend / Unsuspend reliably
             if (model.IsSuspended)
             {
                 await _userManager.SetLockoutEnabledAsync(user, true);
@@ -189,7 +199,7 @@ namespace CurioBid.Controllers
                 await _userManager.ResetAccessFailedCountAsync(user);
             }
 
-            // Invalidate existing sessions so the new role / suspension applies soon
+            // 6. Force active sessions to refresh role/lockout state
             await _userManager.UpdateSecurityStampAsync(user);
 
             TempData["Success"] = $"User {user.Email} was updated.";
@@ -209,7 +219,6 @@ namespace CurioBid.Controllers
             return View(await ToListItemAsync(user));
         }
 
-        // The method has a different C# name, but it answers to the URL /Users/Delete
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string id)
@@ -220,6 +229,15 @@ namespace CurioBid.Controllers
             if (user.Id == _userManager.GetUserId(User))
             {
                 TempData["Error"] = "You cannot delete your own account.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // =========================================================================
+            // NEW CODE: Listings are records that reference this user, so keep the account and suspend it instead
+            // =========================================================================
+            if (await _db.Listings.AnyAsync(l => l.SellerId == id || l.ReviewerId == id))
+            {
+                TempData["Error"] = "This user has listings on record and cannot be deleted. Suspend the account instead.";
                 return RedirectToAction(nameof(Index));
             }
 

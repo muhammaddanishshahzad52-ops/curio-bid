@@ -1,0 +1,80 @@
+﻿@model Listing
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <a asp-action="Index" class="small text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i>My Listings
+            </a>
+
+            <div class="card border-0 shadow-sm mt-2">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold m-0">@Model.Title</h5>
+                    <partial name="_StatusBadge" model="Model.Status" />
+                </div>
+                <div class="card-body p-4">
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ReviewerNote))
+                    {
+                        var noteClass = Model.Status == ListingStatus.Rejected ? "alert-danger" : "alert-warning";
+                        <div class="alert @noteClass">
+                            <strong><i class="bi bi-chat-left-text me-1"></i>Reviewer note:</strong>
+                            @Model.ReviewerNote
+                        </div>
+                    }
+
+                    @if (Model.Status == ListingStatus.Approved && Model.AuctionEndsAt.HasValue)
+                    {
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Approved. The 24-hour auction window ends at
+                            <strong>@Model.AuctionEndsAt.Value.ToString("yyyy-MM-dd HH:mm") UTC</strong>.
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                    {
+                        <img src="@Model.ImageUrl" alt="@Model.Title" class="img-fluid rounded mb-3" style="max-height: 280px;" />
+                    }
+
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Category</dt>
+                        <dd class="col-sm-8">@Model.Category</dd>
+
+                        <dt class="col-sm-4">Starting price</dt>
+                        <dd class="col-sm-8">$@(Model.StartingPrice.ToString("N2"))</dd>
+
+                        <dt class="col-sm-4">Evidence</dt>
+                        <dd class="col-sm-8">@Model.EvidenceType</dd>
+
+                        <dt class="col-sm-4">Video proof</dt>
+                        <dd class="col-sm-8">
+                            <a href="@Model.VideoUrl" target="_blank" rel="noopener noreferrer" class="text-break">@Model.VideoUrl</a>
+                        </dd>
+
+                        <dt class="col-sm-4">Sent to</dt>
+                        <dd class="col-sm-8">@Model.Reviewer?.FullName</dd>
+
+                        <dt class="col-sm-4">Submitted</dt>
+                        <dd class="col-sm-8">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm") UTC</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">@Model.Description</dd>
+                    </dl>
+                </div>
+
+                @if (Model.Status == ListingStatus.NeedsProof)
+                {
+                    <div class="card-footer bg-white text-end">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning fw-bold">
+                            <i class="bi bi-pencil-square me-1"></i>Add Proof and Resubmit
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,27 @@
+﻿@model ListingFormViewModel
+@{
+    ViewData["Title"] = "Add Proof";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold m-0"><i class="bi bi-pencil-square me-2"></i>Update and Resubmit</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <partial name="_ListingFormFields" model="Model" />
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-warning fw-bold px-4">Resubmit for Review</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

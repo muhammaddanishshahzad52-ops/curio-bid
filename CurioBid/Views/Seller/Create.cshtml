@@ -1,0 +1,28 @@
+﻿@model ListingFormViewModel
+@{
+    ViewData["Title"] = "New Listing";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold m-0">
+                        <i class="bi bi-shield-check me-2 text-warning"></i>Submit Item for Authenticator Review
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post">
+                        <partial name="_ListingFormFields" model="Model" />
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-warning fw-bold px-4">Submit for Review</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
